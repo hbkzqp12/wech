@@ -1,0 +1,17 @@
+{
+  "name": "wech",
+  "version": "1.0.0",
+  "description": "微信小游戏项目",
+  "main": "game.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "wechat",
+    "minigame",
+    "游戏"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
