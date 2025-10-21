@@ -13,6 +13,56 @@ const ctx = canvas.getContext('2d')
 canvas.width = screenWidth
 canvas.height = screenHeight
 
+// 图片资源
+const images = {
+  princess: null,
+  princessHappy: null,
+  dinosaur: null,
+  dinosaurDefeated: null
+}
+
+// 图片加载状态
+let imagesLoaded = false
+
+// 加载图片资源
+function loadImages() {
+  const imagesToLoad = [
+    { key: 'princess', src: 'images/princess.png' },
+    { key: 'princessHappy', src: 'images/princess-happy.png' },
+    { key: 'dinosaur', src: 'images/dinosaur.png' },
+    { key: 'dinosaurDefeated', src: 'images/dinosaur-defeated.png' }
+  ]
+  
+  let loadedCount = 0
+  const totalImages = imagesToLoad.length
+  
+  imagesToLoad.forEach(({ key, src }) => {
+    const img = wx.createImage()
+    img.src = src
+    
+    img.onload = () => {
+      images[key] = img
+      loadedCount++
+      console.log(`图片加载成功: ${src}`)
+      
+      if (loadedCount === totalImages) {
+        imagesLoaded = true
+        console.log('所有图片加载完成')
+      }
+    }
+    
+    img.onerror = () => {
+      console.log(`图片加载失败（将使用默认表情）: ${src}`)
+      loadedCount++
+      
+      if (loadedCount === totalImages) {
+        imagesLoaded = true
+        console.log('图片加载完成（部分使用默认表情）')
+      }
+    }
+  })
+}
+
 // 游戏状态
 const GAME_STATE = {
   START: 'start',
@@ -24,28 +74,30 @@ const GAME_STATE = {
 let currentState = GAME_STATE.START
 let score = 0
 
-// 公主对象
+// 公主对象（在前面，大一些）
 const princess = {
   x: screenWidth / 2,
-  y: screenHeight - 80,
-  width: 60,
-  height: 80,
-  color: '#FFB6C1'
+  y: screenHeight - 150,  // 在屏幕下方
+  width: 120,  // 更大
+  height: 150,  // 更大
+  color: '#FFB6C1',
+  imageSize: 100  // 表情符号大小
 }
 
-// 恐龙对象
+// 恐龙对象（在后面，小一些）
 const dinosaur = {
   x: screenWidth / 2,
-  y: screenHeight / 2 - 50,
-  width: 80,
-  height: 100,
-  color: '#228B22'
+  y: 100,  // 在屏幕上方，表示距离远
+  width: 60,  // 更小
+  height: 80,  // 更小
+  color: '#228B22',
+  imageSize: 60  // 表情符号大小
 }
 
 // 瞄准器对象
 const crosshair = {
   x: screenWidth / 2,
-  y: dinosaur.y + dinosaur.height / 2,
+  y: 0,  // 将在初始化时设置
   radius: 20,
   speed: 3,
   direction: 1, // 1表示向右，-1表示向左
@@ -53,13 +105,16 @@ const crosshair = {
   maxX: screenWidth - 50
 }
 
-// 子弹对象
-let bullet = null
+// 初始化瞄准器Y坐标（在恐龙中心）
+crosshair.y = dinosaur.y + dinosaur.height / 2
 
 // 初始化函数
 function init() {
   console.log('游戏初始化完成')
   console.log('屏幕尺寸:', screenWidth, 'x', screenHeight)
+  
+  // 加载图片资源
+  loadImages()
   
   // 启动游戏循环
   gameLoop()
@@ -86,24 +141,6 @@ function update() {
     // 瞄准器到达边界时反向
     if (crosshair.x <= crosshair.minX || crosshair.x >= crosshair.maxX) {
       crosshair.direction *= -1
-    }
-    
-    // 更新子弹
-    if (bullet) {
-      bullet.y -= bullet.speed
-      
-      // 检查子弹是否命中恐龙
-      if (isHit(bullet, dinosaur)) {
-        currentState = GAME_STATE.SUCCESS
-        score += 100
-        bullet = null
-      }
-      
-      // 子弹飞出屏幕
-      if (bullet && bullet.y < 0) {
-        currentState = GAME_STATE.FAIL
-        bullet = null
-      }
     }
   }
 }
@@ -164,11 +201,6 @@ function drawGameScreen() {
   // 绘制瞄准器
   drawCrosshair()
   
-  // 绘制子弹
-  if (bullet) {
-    drawBullet()
-  }
-  
   // 绘制分数
   ctx.fillStyle = '#333'
   ctx.font = 'bold 24px Arial'
@@ -186,28 +218,49 @@ function drawSuccessScreen() {
   // 背景
   drawGradientBackground('#FFD700', '#FFA500')
   
-  // 绘制开心的公主
-  drawPrincess(true)
-  
-  // 绘制被击中的恐龙
-  ctx.fillStyle = '#90EE90'
-  ctx.font = '80px Arial'
-  ctx.textAlign = 'center'
-  ctx.fillText('🦖', screenWidth / 2 + 20, dinosaur.y + 50)
-  ctx.fillText('💫', dinosaur.x, dinosaur.y - 20)
-  
-  // 成功文字
+  // 成功文字（在顶部）
   ctx.fillStyle = '#FF1493'
   ctx.font = 'bold 42px Arial'
-  ctx.fillText('🎉 公主得救了！🎉', canvas.width / 2, canvas.height / 3)
+  ctx.textAlign = 'center'
+  ctx.fillText('🎉 公主得救了！🎉', canvas.width / 2, 80)
   
   ctx.fillStyle = '#333'
   ctx.font = '28px Arial'
-  ctx.fillText('得分: ' + score, canvas.width / 2, canvas.height / 3 + 60)
+  ctx.fillText('得分: ' + score, canvas.width / 2, 140)
+  
+  // 绘制被击中的恐龙（在中间偏上）
+  const defeatedDinoImage = images.dinosaurDefeated || images.dinosaur
+  if (defeatedDinoImage) {
+    // 使用图片
+    const drawWidth = dinosaur.width
+    const drawHeight = dinosaur.height
+    ctx.drawImage(
+      defeatedDinoImage,
+      screenWidth / 2 - drawWidth / 2,
+      215 - drawHeight / 2,
+      drawWidth,
+      drawHeight
+    )
+  } else {
+    // 使用表情符号
+    ctx.fillStyle = '#90EE90'
+    ctx.font = dinosaur.imageSize + 'px Arial'
+    ctx.textAlign = 'center'
+    ctx.fillText('🦖', screenWidth / 2, 230)
+  }
+  
+  // 击中特效
+  ctx.font = '40px Arial'
+  ctx.textAlign = 'center'
+  ctx.fillText('💫', screenWidth / 2 - 40, 210)
+  ctx.fillText('💫', screenWidth / 2 + 40, 210)
+  
+  // 绘制开心的公主（在下方）
+  drawPrincess(true)
   
   ctx.font = '20px Arial'
   ctx.fillStyle = '#666'
-  ctx.fillText('点击屏幕继续游戏', canvas.width / 2, canvas.height - 60)
+  ctx.fillText('点击屏幕继续游戏', canvas.width / 2, canvas.height - 40)
 }
 
 // 绘制失败画面
@@ -215,79 +268,142 @@ function drawFailScreen() {
   // 背景
   drawGradientBackground('#696969', '#808080')
   
-  // 绘制伤心的公主
-  ctx.fillStyle = '#FFB6C1'
-  ctx.font = '60px Arial'
-  ctx.textAlign = 'center'
-  ctx.fillText('👸', princess.x, princess.y + 30)
-  ctx.fillText('😢', princess.x, princess.y - 30)
-  
-  // 绘制庆祝的恐龙
-  ctx.fillStyle = '#228B22'
-  ctx.font = '90px Arial'
-  ctx.fillText('🦖', screenWidth / 2, dinosaur.y + 60)
-  ctx.fillText('🎊', dinosaur.x - 50, dinosaur.y)
-  ctx.fillText('🎉', dinosaur.x + 50, dinosaur.y)
-  
-  // 失败文字
+  // 失败文字（在顶部）
   ctx.fillStyle = '#FF0000'
   ctx.font = 'bold 38px Arial'
-  ctx.fillText('😱 射偏了！😱', canvas.width / 2, canvas.height / 3)
+  ctx.textAlign = 'center'
+  ctx.fillText('😱 射偏了！😱', canvas.width / 2, 80)
   
-  ctx.fillStyle = '#333'
+  ctx.fillStyle = '#FFF'
   ctx.font = '24px Arial'
-  ctx.fillText('恐龙逃脱了...', canvas.width / 2, canvas.height / 3 + 60)
+  ctx.fillText('恐龙逃脱了...', canvas.width / 2, 130)
+  
+  // 绘制庆祝的恐龙（在中间偏上）
+  if (images.dinosaur) {
+    // 使用图片，稍微放大一些表示庆祝
+    const drawWidth = dinosaur.width * 1.3
+    const drawHeight = dinosaur.height * 1.3
+    ctx.drawImage(
+      images.dinosaur,
+      screenWidth / 2 - drawWidth / 2,
+      215 - drawHeight / 2,
+      drawWidth,
+      drawHeight
+    )
+  } else {
+    // 使用表情符号
+    ctx.fillStyle = '#228B22'
+    ctx.font = (dinosaur.imageSize * 1.5) + 'px Arial'
+    ctx.textAlign = 'center'
+    ctx.fillText('🦖', screenWidth / 2, 230)
+  }
+  
+  // 庆祝特效
+  ctx.font = '35px Arial'
+  ctx.textAlign = 'center'
+  ctx.fillText('🎊', screenWidth / 2 - 50, 210)
+  ctx.fillText('🎉', screenWidth / 2 + 50, 210)
+  
+  // 绘制伤心的公主（在下方）
+  ctx.fillStyle = '#FFB6C1'
+  ctx.font = princess.imageSize + 'px Arial'
+  ctx.fillText('👸', princess.x, princess.y)
+  ctx.font = '50px Arial'
+  ctx.fillText('😢', princess.x - 40, princess.y - 30)
+  ctx.fillText('😢', princess.x + 40, princess.y - 30)
   
   ctx.font = '20px Arial'
-  ctx.fillStyle = '#666'
-  ctx.fillText('点击屏幕再试一次', canvas.width / 2, canvas.height - 60)
+  ctx.fillStyle = '#FFF'
+  ctx.fillText('点击屏幕再试一次', canvas.width / 2, canvas.height - 40)
 }
 
-// 绘制公主
+// 绘制公主（在前面，正面朝向，被追赶的样子）
 function drawPrincess(happy = false) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   
-  // 绘制公主身体
-  ctx.fillStyle = princess.color
-  ctx.beginPath()
-  ctx.moveTo(princess.x, princess.y)
-  ctx.lineTo(princess.x - princess.width / 2, princess.y + princess.height / 2)
-  ctx.lineTo(princess.x + princess.width / 2, princess.y + princess.height / 2)
-  ctx.closePath()
-  ctx.fill()
+  // 如果有图片资源，使用图片
+  const princessImage = happy ? (images.princessHappy || images.princess) : images.princess
   
-  // 绘制公主表情
-  ctx.font = '50px Arial'
-  if (happy) {
-    ctx.fillText('😊', princess.x, princess.y - 10)
+  if (princessImage) {
+    // 使用图片绘制
+    const drawWidth = princess.width
+    const drawHeight = princess.height
+    ctx.drawImage(
+      princessImage,
+      princess.x - drawWidth / 2,
+      princess.y - drawHeight / 2,
+      drawWidth,
+      drawHeight
+    )
   } else {
-    ctx.fillText('👸', princess.x, princess.y - 10)
+    // 使用表情符号作为后备方案
+    // 绘制公主身体（粉色裙子）
+    ctx.fillStyle = princess.color
+    ctx.beginPath()
+    ctx.moveTo(princess.x, princess.y - princess.height / 3)
+    ctx.lineTo(princess.x - princess.width / 2, princess.y + princess.height / 3)
+    ctx.lineTo(princess.x + princess.width / 2, princess.y + princess.height / 3)
+    ctx.closePath()
+    ctx.fill()
+    
+    // 绘制公主头部（圆形）
+    ctx.fillStyle = '#FFDAB9'
+    ctx.beginPath()
+    ctx.arc(princess.x, princess.y - princess.height / 3, 30, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // 绘制公主表情（更大）
+    ctx.font = princess.imageSize + 'px Arial'
+    if (happy) {
+      ctx.fillText('😊', princess.x, princess.y - 15)
+    } else {
+      ctx.fillText('👸', princess.x, princess.y - 15)
+    }
   }
 }
 
-// 绘制恐龙
-function drawDinosaur() {
+// 绘制恐龙（在后面，小一些，正面朝向，追赶的样子）
+function drawDinosaur(defeated = false) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   
-  // 绘制恐龙身体
-  ctx.fillStyle = dinosaur.color
-  ctx.fillRect(
-    dinosaur.x - dinosaur.width / 2,
-    dinosaur.y,
-    dinosaur.width,
-    dinosaur.height
-  )
+  // 如果有图片资源，使用图片
+  const dinosaurImage = defeated ? (images.dinosaurDefeated || images.dinosaur) : images.dinosaur
   
-  // 绘制恐龙表情
-  ctx.font = '70px Arial'
-  ctx.fillText('🦖', dinosaur.x, dinosaur.y + 40)
-  
-  // 绘制眼睛和牙齿
-  ctx.fillStyle = '#FF0000'
-  ctx.font = '20px Arial'
-  ctx.fillText('😈', dinosaur.x, dinosaur.y + 10)
+  if (dinosaurImage) {
+    // 使用图片绘制
+    const drawWidth = dinosaur.width
+    const drawHeight = dinosaur.height
+    ctx.drawImage(
+      dinosaurImage,
+      dinosaur.x - drawWidth / 2,
+      dinosaur.y - drawHeight / 2,
+      drawWidth,
+      drawHeight
+    )
+  } else {
+    // 使用表情符号作为后备方案
+    // 绘制恐龙身体（绿色）
+    ctx.fillStyle = dinosaur.color
+    ctx.fillRect(
+      dinosaur.x - dinosaur.width / 2,
+      dinosaur.y,
+      dinosaur.width,
+      dinosaur.height
+    )
+    
+    // 绘制恐龙表情（更小）
+    ctx.font = dinosaur.imageSize + 'px Arial'
+    ctx.fillText('🦖', dinosaur.x, dinosaur.y + 35)
+    
+    // 绘制愤怒表情
+    if (!defeated) {
+      ctx.fillStyle = '#FF0000'
+      ctx.font = (dinosaur.imageSize / 3) + 'px Arial'
+      ctx.fillText('😈', dinosaur.x, dinosaur.y + 10)
+    }
+  }
 }
 
 // 绘制瞄准器
@@ -315,19 +431,6 @@ function drawCrosshair() {
   ctx.fill()
 }
 
-// 绘制子弹
-function drawBullet() {
-  ctx.fillStyle = '#FFD700'
-  ctx.beginPath()
-  ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2)
-  ctx.fill()
-  
-  // 子弹光晕
-  ctx.strokeStyle = '#FFA500'
-  ctx.lineWidth = 2
-  ctx.stroke()
-}
-
 // 绘制渐变背景
 function drawGradientBackground(color1, color2) {
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
@@ -337,23 +440,24 @@ function drawGradientBackground(color1, color2) {
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 }
 
-// 检测子弹是否命中恐龙
-function isHit(bullet, target) {
-  const dx = bullet.x - target.x
-  const dy = bullet.y - (target.y + target.height / 2)
-  const distance = Math.sqrt(dx * dx + dy * dy)
+// 检测瞄准器是否对准恐龙
+function isCrosshairOnDinosaur() {
+  // 判断瞄准器的X坐标是否在恐龙范围内
+  const dinosaurLeft = dinosaur.x - dinosaur.width / 2
+  const dinosaurRight = dinosaur.x + dinosaur.width / 2
   
-  return distance < (bullet.radius + target.width / 2)
+  return crosshair.x >= dinosaurLeft && crosshair.x <= dinosaurRight
 }
 
 // 射击
 function shoot() {
-  if (currentState === GAME_STATE.PLAYING && !bullet) {
-    bullet = {
-      x: crosshair.x,
-      y: crosshair.y,
-      radius: 8,
-      speed: 10
+  if (currentState === GAME_STATE.PLAYING) {
+    // 立即判定是否击中恐龙
+    if (isCrosshairOnDinosaur()) {
+      currentState = GAME_STATE.SUCCESS
+      score += 100
+    } else {
+      currentState = GAME_STATE.FAIL
     }
   }
 }
@@ -361,7 +465,6 @@ function shoot() {
 // 开始游戏
 function startGame() {
   currentState = GAME_STATE.PLAYING
-  bullet = null
   
   // 重置恐龙和瞄准器位置
   dinosaur.x = screenWidth / 2
