@@ -13,6 +13,13 @@ const ctx = canvas.getContext('2d')
 canvas.width = screenWidth
 canvas.height = screenHeight
 
+// 游戏区域配置（中间50%，上下各留25%空白）
+const gameArea = {
+  top: screenHeight * 0.25,      // 游戏区域顶部
+  bottom: screenHeight * 0.75,    // 游戏区域底部
+  height: screenHeight * 0.5      // 游戏区域高度
+}
+
 // 图片资源
 const images = {
   princess: null,
@@ -77,7 +84,7 @@ let score = 0
 // 公主对象（在前面，大一些）
 const princess = {
   x: screenWidth / 2,
-  y: screenHeight - 150,  // 在屏幕下方
+  y: gameArea.bottom - 100,  // 在游戏区域下方
   width: 120,  // 更大
   height: 150,  // 更大
   color: '#FFB6C1',
@@ -87,7 +94,7 @@ const princess = {
 // 恐龙对象（在后面，小一些）
 const dinosaur = {
   x: screenWidth / 2,
-  y: 100,  // 在屏幕上方，表示距离远
+  y: gameArea.top + 50,  // 在游戏区域上方，表示距离远
   width: 60,  // 更小
   height: 80,  // 更小
   color: '#228B22',
@@ -150,6 +157,10 @@ function render() {
   // 清空画布
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   
+  // 绘制全屏背景
+  ctx.fillStyle = '#F5F5F5'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  
   if (currentState === GAME_STATE.START) {
     drawStartScreen()
   } else if (currentState === GAME_STATE.PLAYING) {
@@ -159,6 +170,9 @@ function render() {
   } else if (currentState === GAME_STATE.FAIL) {
     drawFailScreen()
   }
+  
+  // 绘制游戏区域边界（可选，如不需要可注释掉）
+  drawGameAreaBorder()
 }
 
 // 绘制开始画面
@@ -166,22 +180,22 @@ function drawStartScreen() {
   // 背景
   drawGradientBackground('#87CEEB', '#E0F6FF')
   
-  // 标题
+  // 标题（在游戏区域顶部）
   ctx.fillStyle = '#FF1493'
   ctx.font = 'bold 36px Arial'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('🏰 救救公主 🏰', canvas.width / 2, canvas.height / 3)
+  ctx.fillText('🏰 救救公主 🏰', canvas.width / 2, gameArea.top + gameArea.height * 0.2)
   
-  // 说明
+  // 说明（在游戏区域中部）
   ctx.fillStyle = '#333'
   ctx.font = '22px Arial'
-  ctx.fillText('点击屏幕开始游戏', canvas.width / 2, canvas.height / 2)
+  ctx.fillText('点击屏幕开始游戏', canvas.width / 2, gameArea.top + gameArea.height * 0.45)
   
   ctx.font = '18px Arial'
   ctx.fillStyle = '#666'
-  ctx.fillText('瞄准恐龙射击', canvas.width / 2, canvas.height / 2 + 50)
-  ctx.fillText('拯救公主！', canvas.width / 2, canvas.height / 2 + 80)
+  ctx.fillText('瞄准恐龙射击', canvas.width / 2, gameArea.top + gameArea.height * 0.55)
+  ctx.fillText('拯救公主！', canvas.width / 2, gameArea.top + gameArea.height * 0.62)
   
   // 绘制示例公主
   drawPrincess()
@@ -201,16 +215,17 @@ function drawGameScreen() {
   // 绘制瞄准器
   drawCrosshair()
   
-  // 绘制分数
+  // 绘制分数（在游戏区域上方的空白处）
   ctx.fillStyle = '#333'
   ctx.font = 'bold 24px Arial'
   ctx.textAlign = 'left'
-  ctx.fillText('分数: ' + score, 20, 40)
+  ctx.textBaseline = 'middle'
+  ctx.fillText('分数: ' + score, 20, gameArea.top / 2)
   
-  // 提示文字
+  // 提示文字（在游戏区域上方的空白处）
   ctx.font = '18px Arial'
   ctx.textAlign = 'center'
-  ctx.fillText('点击屏幕射击！', canvas.width / 2, 40)
+  ctx.fillText('点击屏幕射击！', canvas.width / 2, gameArea.top / 2)
 }
 
 // 绘制成功画面
@@ -218,18 +233,20 @@ function drawSuccessScreen() {
   // 背景
   drawGradientBackground('#FFD700', '#FFA500')
   
-  // 成功文字（在顶部）
+  // 成功文字（在游戏区域顶部）
   ctx.fillStyle = '#FF1493'
   ctx.font = 'bold 42px Arial'
   ctx.textAlign = 'center'
-  ctx.fillText('🎉 公主得救了！🎉', canvas.width / 2, 80)
+  ctx.textBaseline = 'middle'
+  ctx.fillText('🎉 公主得救了！🎉', canvas.width / 2, gameArea.top + 50)
   
   ctx.fillStyle = '#333'
   ctx.font = '28px Arial'
-  ctx.fillText('得分: ' + score, canvas.width / 2, 140)
+  ctx.fillText('得分: ' + score, canvas.width / 2, gameArea.top + 100)
   
-  // 绘制被击中的恐龙（在中间偏上）
+  // 绘制被击中的恐龙（在游戏区域中间偏上）
   const defeatedDinoImage = images.dinosaurDefeated || images.dinosaur
+  const dinoY = gameArea.top + gameArea.height * 0.38
   if (defeatedDinoImage) {
     // 使用图片
     const drawWidth = dinosaur.width
@@ -237,7 +254,7 @@ function drawSuccessScreen() {
     ctx.drawImage(
       defeatedDinoImage,
       screenWidth / 2 - drawWidth / 2,
-      215 - drawHeight / 2,
+      dinoY - drawHeight / 2,
       drawWidth,
       drawHeight
     )
@@ -246,21 +263,22 @@ function drawSuccessScreen() {
     ctx.fillStyle = '#90EE90'
     ctx.font = dinosaur.imageSize + 'px Arial'
     ctx.textAlign = 'center'
-    ctx.fillText('🦖', screenWidth / 2, 230)
+    ctx.fillText('🦖', screenWidth / 2, dinoY + 15)
   }
   
   // 击中特效
   ctx.font = '40px Arial'
   ctx.textAlign = 'center'
-  ctx.fillText('💫', screenWidth / 2 - 40, 210)
-  ctx.fillText('💫', screenWidth / 2 + 40, 210)
+  ctx.fillText('💫', screenWidth / 2 - 40, dinoY - 5)
+  ctx.fillText('💫', screenWidth / 2 + 40, dinoY - 5)
   
   // 绘制开心的公主（在下方）
   drawPrincess(true)
   
+  // 提示文字（在游戏区域下方的空白处）
   ctx.font = '20px Arial'
   ctx.fillStyle = '#666'
-  ctx.fillText('点击屏幕继续游戏', canvas.width / 2, canvas.height - 40)
+  ctx.fillText('点击屏幕继续游戏', canvas.width / 2, gameArea.bottom + (screenHeight - gameArea.bottom) / 2)
 }
 
 // 绘制失败画面
@@ -268,17 +286,19 @@ function drawFailScreen() {
   // 背景
   drawGradientBackground('#696969', '#808080')
   
-  // 失败文字（在顶部）
+  // 失败文字（在游戏区域顶部）
   ctx.fillStyle = '#FF0000'
   ctx.font = 'bold 38px Arial'
   ctx.textAlign = 'center'
-  ctx.fillText('😱 射偏了！😱', canvas.width / 2, 80)
+  ctx.textBaseline = 'middle'
+  ctx.fillText('😱 射偏了！😱', canvas.width / 2, gameArea.top + 50)
   
   ctx.fillStyle = '#FFF'
   ctx.font = '24px Arial'
-  ctx.fillText('恐龙逃脱了...', canvas.width / 2, 130)
+  ctx.fillText('恐龙逃脱了...', canvas.width / 2, gameArea.top + 100)
   
-  // 绘制庆祝的恐龙（在中间偏上）
+  // 绘制庆祝的恐龙（在游戏区域中间偏上）
+  const dinoY = gameArea.top + gameArea.height * 0.38
   if (images.dinosaur) {
     // 使用图片，稍微放大一些表示庆祝
     const drawWidth = dinosaur.width * 1.3
@@ -286,7 +306,7 @@ function drawFailScreen() {
     ctx.drawImage(
       images.dinosaur,
       screenWidth / 2 - drawWidth / 2,
-      215 - drawHeight / 2,
+      dinoY - drawHeight / 2,
       drawWidth,
       drawHeight
     )
@@ -295,14 +315,14 @@ function drawFailScreen() {
     ctx.fillStyle = '#228B22'
     ctx.font = (dinosaur.imageSize * 1.5) + 'px Arial'
     ctx.textAlign = 'center'
-    ctx.fillText('🦖', screenWidth / 2, 230)
+    ctx.fillText('🦖', screenWidth / 2, dinoY + 15)
   }
   
   // 庆祝特效
   ctx.font = '35px Arial'
   ctx.textAlign = 'center'
-  ctx.fillText('🎊', screenWidth / 2 - 50, 210)
-  ctx.fillText('🎉', screenWidth / 2 + 50, 210)
+  ctx.fillText('🎊', screenWidth / 2 - 50, dinoY - 5)
+  ctx.fillText('🎉', screenWidth / 2 + 50, dinoY - 5)
   
   // 绘制伤心的公主（在下方）
   ctx.fillStyle = '#FFB6C1'
@@ -312,9 +332,10 @@ function drawFailScreen() {
   ctx.fillText('😢', princess.x - 40, princess.y - 30)
   ctx.fillText('😢', princess.x + 40, princess.y - 30)
   
+  // 提示文字（在游戏区域下方的空白处）
   ctx.font = '20px Arial'
   ctx.fillStyle = '#FFF'
-  ctx.fillText('点击屏幕再试一次', canvas.width / 2, canvas.height - 40)
+  ctx.fillText('点击屏幕再试一次', canvas.width / 2, gameArea.bottom + (screenHeight - gameArea.bottom) / 2)
 }
 
 // 绘制公主（在前面，正面朝向，被追赶的样子）
@@ -431,13 +452,22 @@ function drawCrosshair() {
   ctx.fill()
 }
 
-// 绘制渐变背景
+// 绘制渐变背景（只在游戏区域内）
 function drawGradientBackground(color1, color2) {
-  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+  const gradient = ctx.createLinearGradient(0, gameArea.top, 0, gameArea.bottom)
   gradient.addColorStop(0, color1)
   gradient.addColorStop(1, color2)
   ctx.fillStyle = gradient
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillRect(0, gameArea.top, canvas.width, gameArea.height)
+}
+
+// 绘制游戏区域边界（调试用）
+function drawGameAreaBorder() {
+  ctx.strokeStyle = '#CCC'
+  ctx.lineWidth = 2
+  ctx.setLineDash([5, 5])
+  ctx.strokeRect(0, gameArea.top, canvas.width, gameArea.height)
+  ctx.setLineDash([])
 }
 
 // 检测瞄准器是否对准恐龙
