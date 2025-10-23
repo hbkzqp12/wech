@@ -80,6 +80,9 @@ const GAME_STATE = {
 
 let currentState = GAME_STATE.START
 let score = 0
+let level = 1  // 当前关卡
+const BASE_SPEED = 3  // 基础速度
+const SPEED_INCREMENT = 1.5  // 每关速度增量
 
 // 公主对象（在前面，大一些）
 const princess = {
@@ -106,7 +109,7 @@ const crosshair = {
   x: screenWidth / 2,
   y: 0,  // 将在初始化时设置
   radius: 20,
-  speed: 3,
+  speed: BASE_SPEED,  // 初始速度
   direction: 1, // 1表示向右，-1表示向左
   minX: 50,
   maxX: screenWidth - 50
@@ -150,6 +153,12 @@ function update() {
       crosshair.direction *= -1
     }
   }
+}
+
+// 计算当前关卡的速度（每5关一个轮回）
+function calculateSpeed() {
+  const levelInCycle = ((level - 1) % 5) + 1  // 1-5循环
+  return BASE_SPEED + (levelInCycle - 1) * SPEED_INCREMENT
 }
 
 // 渲染游戏画面
@@ -215,17 +224,27 @@ function drawGameScreen() {
   // 绘制瞄准器
   drawCrosshair()
   
-  // 绘制分数（在游戏区域内顶部）
+  // 绘制关卡和分数（在游戏区域上方的空白处）
   ctx.fillStyle = '#333'
   ctx.font = 'bold 24px Arial'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText('分数: ' + score, 20, gameArea.top + 30)
+  ctx.fillText('第 ' + level + ' 关', 20, gameArea.top / 2 - 15)
+  ctx.font = 'bold 20px Arial'
+  ctx.fillText('分数: ' + score, 20, gameArea.top / 2 + 15)
   
-  // 提示文字（在游戏区域内顶部）
+  // 速度提示（右上角）
+  const levelInCycle = ((level - 1) % 5) + 1
+  ctx.font = '18px Arial'
+  ctx.textAlign = 'right'
+  ctx.fillStyle = '#666'
+  ctx.fillText('速度: ★'.repeat(levelInCycle), screenWidth - 20, gameArea.top / 2)
+  
+  // 提示文字（在游戏区域上方的空白处中间）
   ctx.font = '18px Arial'
   ctx.textAlign = 'center'
-  ctx.fillText('点击屏幕射击！', canvas.width / 2, gameArea.top + 30)
+  ctx.fillStyle = '#333'
+  ctx.fillText('点击屏幕射击！', canvas.width / 2, gameArea.top / 2)
 }
 
 // 绘制成功画面
@@ -242,7 +261,9 @@ function drawSuccessScreen() {
   
   ctx.fillStyle = '#333'
   ctx.font = '28px Arial'
-  ctx.fillText('得分: ' + score, canvas.width / 2, gameArea.top + 100)
+  ctx.fillText('第 ' + level + ' 关完成！', canvas.width / 2, gameArea.top + 100)
+  ctx.font = '24px Arial'
+  ctx.fillText('总分: ' + score, canvas.width / 2, gameArea.top + 140)
   
   // 绘制被击中的恐龙（在游戏区域中间偏上）
   const defeatedDinoImage = images.dinosaurDefeated || images.dinosaur
@@ -275,10 +296,12 @@ function drawSuccessScreen() {
   // 绘制开心的公主（在下方）
   drawPrincess(true)
   
-  // 提示文字（在游戏区域内底部）
+  // 提示文字（在游戏区域下方的空白处）
   ctx.font = '20px Arial'
   ctx.fillStyle = '#666'
-  ctx.fillText('点击屏幕继续游戏', canvas.width / 2, gameArea.bottom - 30)
+  const nextLevel = level + 1
+  const nextLevelInCycle = ((nextLevel - 1) % 5) + 1
+  ctx.fillText('点击进入第 ' + nextLevel + ' 关（速度: ★'.repeat(nextLevelInCycle) + '）', canvas.width / 2, gameArea.bottom + (screenHeight - gameArea.bottom) / 2)
 }
 
 // 绘制失败画面
@@ -295,7 +318,9 @@ function drawFailScreen() {
   
   ctx.fillStyle = '#FFF'
   ctx.font = '24px Arial'
-  ctx.fillText('恐龙逃脱了...', canvas.width / 2, gameArea.top + 100)
+  ctx.fillText('第 ' + level + ' 关失败！', canvas.width / 2, gameArea.top + 100)
+  ctx.font = '20px Arial'
+  ctx.fillText('总分: ' + score, canvas.width / 2, gameArea.top + 140)
   
   // 绘制庆祝的恐龙（在游戏区域中间偏上）
   const dinoY = gameArea.top + gameArea.height * 0.38
@@ -332,10 +357,10 @@ function drawFailScreen() {
   ctx.fillText('😢', princess.x - 40, princess.y - 30)
   ctx.fillText('😢', princess.x + 40, princess.y - 30)
   
-  // 提示文字（在游戏区域内底部）
+  // 提示文字（在游戏区域下方的空白处）
   ctx.font = '20px Arial'
   ctx.fillStyle = '#FFF'
-  ctx.fillText('点击屏幕再试一次', canvas.width / 2, gameArea.bottom - 30)
+  ctx.fillText('点击屏幕再试一次', canvas.width / 2, gameArea.bottom + (screenHeight - gameArea.bottom) / 2)
 }
 
 // 绘制公主（在前面，正面朝向，被追赶的样子）
@@ -485,14 +510,15 @@ function shoot() {
     // 立即判定是否击中恐龙
     if (isCrosshairOnDinosaur()) {
       currentState = GAME_STATE.SUCCESS
-      score += 100
+      // 根据关卡给分，关卡越高分数越高
+      score += 100 + (level - 1) * 20
     } else {
       currentState = GAME_STATE.FAIL
     }
   }
 }
 
-// 开始游戏
+// 开始游戏或进入下一关
 function startGame() {
   currentState = GAME_STATE.PLAYING
   
@@ -500,6 +526,21 @@ function startGame() {
   dinosaur.x = screenWidth / 2
   crosshair.x = screenWidth / 2
   crosshair.direction = 1
+  
+  // 根据当前关卡设置速度
+  crosshair.speed = calculateSpeed()
+  console.log('第 ' + level + ' 关开始，速度: ' + crosshair.speed)
+}
+
+// 进入下一关
+function nextLevel() {
+  level++
+  startGame()
+}
+
+// 重新开始（失败后）
+function restartLevel() {
+  startGame()
 }
 
 // 监听触摸事件
@@ -511,8 +552,12 @@ wx.onTouchStart((e) => {
     startGame()
   } else if (currentState === GAME_STATE.PLAYING) {
     shoot()
-  } else if (currentState === GAME_STATE.SUCCESS || currentState === GAME_STATE.FAIL) {
-    startGame()
+  } else if (currentState === GAME_STATE.SUCCESS) {
+    // 成功后进入下一关
+    nextLevel()
+  } else if (currentState === GAME_STATE.FAIL) {
+    // 失败后重新开始当前关
+    restartLevel()
   }
 })
 
