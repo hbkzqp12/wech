@@ -215,17 +215,17 @@ function drawGameScreen() {
   // 绘制瞄准器
   drawCrosshair()
   
-  // 绘制分数（在游戏区域上方的空白处）
+  // 绘制分数（在游戏区域内顶部）
   ctx.fillStyle = '#333'
   ctx.font = 'bold 24px Arial'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText('分数: ' + score, 20, gameArea.top / 2)
+  ctx.fillText('分数: ' + score, 20, gameArea.top + 30)
   
-  // 提示文字（在游戏区域上方的空白处）
+  // 提示文字（在游戏区域内顶部）
   ctx.font = '18px Arial'
   ctx.textAlign = 'center'
-  ctx.fillText('点击屏幕射击！', canvas.width / 2, gameArea.top / 2)
+  ctx.fillText('点击屏幕射击！', canvas.width / 2, gameArea.top + 30)
 }
 
 // 绘制成功画面
@@ -275,10 +275,10 @@ function drawSuccessScreen() {
   // 绘制开心的公主（在下方）
   drawPrincess(true)
   
-  // 提示文字（在游戏区域下方的空白处）
+  // 提示文字（在游戏区域内底部）
   ctx.font = '20px Arial'
   ctx.fillStyle = '#666'
-  ctx.fillText('点击屏幕继续游戏', canvas.width / 2, gameArea.bottom + (screenHeight - gameArea.bottom) / 2)
+  ctx.fillText('点击屏幕继续游戏', canvas.width / 2, gameArea.bottom - 30)
 }
 
 // 绘制失败画面
@@ -332,10 +332,10 @@ function drawFailScreen() {
   ctx.fillText('😢', princess.x - 40, princess.y - 30)
   ctx.fillText('😢', princess.x + 40, princess.y - 30)
   
-  // 提示文字（在游戏区域下方的空白处）
+  // 提示文字（在游戏区域内底部）
   ctx.font = '20px Arial'
   ctx.fillStyle = '#FFF'
-  ctx.fillText('点击屏幕再试一次', canvas.width / 2, gameArea.bottom + (screenHeight - gameArea.bottom) / 2)
+  ctx.fillText('点击屏幕再试一次', canvas.width / 2, gameArea.bottom - 30)
 }
 
 // 绘制公主（在前面，正面朝向，被追赶的样子）
