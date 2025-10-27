@@ -97,7 +97,7 @@ const princess = {
 // 恐龙对象（在后面，小一些）
 const dinosaur = {
   x: screenWidth / 2,
-  y: gameArea.top + 50,  // 在游戏区域上方，表示距离远
+  y: gameArea.top + 120,  // 在游戏区域上方，表示距离远，避免与分数重叠
   width: 60,  // 更小
   height: 80,  // 更小
   color: '#228B22',
@@ -224,14 +224,14 @@ function drawGameScreen() {
   // 绘制瞄准器
   drawCrosshair()
   
-  // 绘制关卡和分数（在游戏区域内顶部）
+  // 绘制关卡和分数（在游戏区域内左上角）
   ctx.fillStyle = '#333'
-  ctx.font = 'bold 24px Arial'
+  ctx.font = 'bold 20px Arial'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText('第 ' + level + ' 关', 20, gameArea.top + 25)
-  ctx.font = 'bold 20px Arial'
-  ctx.fillText('分数: ' + score, 20, gameArea.top + 55)
+  ctx.fillText('第 ' + level + ' 关', 15, gameArea.top + 30)
+  ctx.font = '18px Arial'
+  ctx.fillText('分数: ' + score, 15, gameArea.top + 55)
   
   // 提示文字（在游戏区域内顶部中间）
   ctx.font = '18px Arial'
@@ -255,8 +255,11 @@ function drawSuccessScreen() {
   ctx.fillStyle = '#333'
   ctx.font = '28px Arial'
   ctx.fillText('第 ' + level + ' 关完成！', canvas.width / 2, gameArea.top + 100)
-  ctx.font = '24px Arial'
-  ctx.fillText('总分: ' + score, canvas.width / 2, gameArea.top + 140)
+  
+  // 总分显示在左下角
+  ctx.font = '22px Arial'
+  ctx.textAlign = 'left'
+  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 30)
   
   // 绘制被击中的恐龙（在游戏区域中间偏上）
   const defeatedDinoImage = images.dinosaurDefeated || images.dinosaur
@@ -311,8 +314,11 @@ function drawFailScreen() {
   ctx.fillStyle = '#FFF'
   ctx.font = '24px Arial'
   ctx.fillText('第 ' + level + ' 关失败！', canvas.width / 2, gameArea.top + 100)
-  ctx.font = '20px Arial'
-  ctx.fillText('总分: ' + score, canvas.width / 2, gameArea.top + 140)
+  
+  // 总分显示在左下角
+  ctx.font = '22px Arial'
+  ctx.textAlign = 'left'
+  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 30)
   
   // 绘制庆祝的恐龙（在游戏区域中间偏上）
   const dinoY = gameArea.top + gameArea.height * 0.38
