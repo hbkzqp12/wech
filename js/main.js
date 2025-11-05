@@ -84,6 +84,16 @@ let level = 1  // 当前关卡
 const BASE_SPEED = 3  // 基础速度
 const SPEED_INCREMENT = 1.5  // 每关速度增量
 
+// 兑换按钮对象
+const exchangeButton = {
+  width: 110,
+  height: 40,
+  x: 15,  // 左下角，与总分对齐
+  y: 0,  // 将在绘制时动态计算（总分下方）
+  text: '兑换',
+  cost: 1000
+}
+
 // 公主对象（在前面，大一些）
 const princess = {
   x: screenWidth / 2,
@@ -259,7 +269,10 @@ function drawSuccessScreen() {
   // 总分显示在左下角
   ctx.font = '22px Arial'
   ctx.textAlign = 'left'
-  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 30)
+  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 80)
+  
+  // 绘制兑换按钮（在总分下方）
+  drawExchangeButton(gameArea.bottom - 50)
   
   // 绘制被击中的恐龙（在游戏区域中间偏上）
   const defeatedDinoImage = images.dinosaurDefeated || images.dinosaur
@@ -318,7 +331,10 @@ function drawFailScreen() {
   // 总分显示在左下角
   ctx.font = '22px Arial'
   ctx.textAlign = 'left'
-  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 30)
+  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 80)
+  
+  // 绘制兑换按钮（在总分下方）
+  drawExchangeButton(gameArea.bottom - 50)
   
   // 绘制庆祝的恐龙（在游戏区域中间偏上）
   const dinoY = gameArea.top + gameArea.height * 0.38
@@ -493,6 +509,54 @@ function drawGameAreaBorder() {
   ctx.setLineDash([])
 }
 
+// 绘制兑换按钮
+function drawExchangeButton(yPosition) {
+  // 更新按钮Y坐标
+  exchangeButton.y = yPosition
+  
+  // 判断是否有足够的分数
+  const canExchange = score >= exchangeButton.cost
+  
+  // 绘制按钮背景
+  ctx.fillStyle = canExchange ? '#4CAF50' : '#999'
+  ctx.fillRect(exchangeButton.x, exchangeButton.y, exchangeButton.width, exchangeButton.height)
+  
+  // 绘制按钮边框
+  ctx.strokeStyle = canExchange ? '#45a049' : '#666'
+  ctx.lineWidth = 2
+  ctx.strokeRect(exchangeButton.x, exchangeButton.y, exchangeButton.width, exchangeButton.height)
+  
+  // 绘制按钮文字
+  ctx.fillStyle = '#FFF'
+  ctx.font = 'bold 16px Arial'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(exchangeButton.text + ' -' + exchangeButton.cost, 
+    exchangeButton.x + exchangeButton.width / 2, 
+    exchangeButton.y + exchangeButton.height / 2)
+}
+
+// 检测是否点击了兑换按钮
+function isClickOnExchangeButton(x, y) {
+  return x >= exchangeButton.x && 
+         x <= exchangeButton.x + exchangeButton.width &&
+         y >= exchangeButton.y && 
+         y <= exchangeButton.y + exchangeButton.height
+}
+
+// 兑换分数
+function exchangeScore() {
+  if (score >= exchangeButton.cost) {
+    score -= exchangeButton.cost
+    console.log('兑换成功！剩余分数: ' + score)
+    // 这里可以添加兑换成功的效果或奖励
+    return true
+  } else {
+    console.log('分数不足，无法兑换')
+    return false
+  }
+}
+
 // 检测瞄准器是否对准恐龙
 function isCrosshairOnDinosaur() {
   // 判断瞄准器的X坐标是否在恐龙范围内
@@ -545,6 +609,13 @@ function restartLevel() {
 wx.onTouchStart((e) => {
   const touch = e.touches[0]
   console.log('触摸位置:', touch.clientX, touch.clientY)
+  
+  // 检查是否点击了兑换按钮（只在成功或失败画面显示）
+  if ((currentState === GAME_STATE.SUCCESS || currentState === GAME_STATE.FAIL) &&
+      isClickOnExchangeButton(touch.clientX, touch.clientY)) {
+    exchangeScore()
+    return  // 点击了按钮就不执行其他操作
+  }
   
   if (currentState === GAME_STATE.START) {
     startGame()
