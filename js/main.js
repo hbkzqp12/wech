@@ -309,7 +309,7 @@ function drawSuccessScreen() {
   ctx.font = '20px Arial'
   ctx.fillStyle = '#666'
   const nextLevel = level + 1
-  ctx.fillText('点击进入第 ' + nextLevel + ' 关', canvas.width / 2, gameArea.bottom - 40)
+  ctx.fillText('点击继续', canvas.width / 2, gameArea.bottom - 40)
 }
 
 // 绘制失败画面
@@ -374,7 +374,7 @@ function drawFailScreen() {
   // 提示文字（在游戏区域内底部）
   ctx.font = '20px Arial'
   ctx.fillStyle = '#FFF'
-  ctx.fillText('点击屏幕再试一次', canvas.width / 2, gameArea.bottom - 40)
+  ctx.fillText('点击再试', canvas.width / 2, gameArea.bottom - 40)
 }
 
 // 绘制公主（在前面，正面朝向，被追赶的样子）
@@ -572,8 +572,10 @@ function shoot() {
     // 立即判定是否击中恐龙
     if (isCrosshairOnDinosaur()) {
       currentState = GAME_STATE.SUCCESS
-      // 根据关卡给分，关卡越高分数越高
-      score += 100 + (level - 1) * 20
+      // 根据速度等级给分（每5关轮回一次）
+      const levelInCycle = ((level - 1) % 5) + 1  // 1-5循环
+      score += 100 + (levelInCycle - 1) * 20
+      console.log('速度等级: ' + levelInCycle + ', 获得分数: ' + (100 + (levelInCycle - 1) * 20))
     } else {
       currentState = GAME_STATE.FAIL
     }
