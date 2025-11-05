@@ -86,17 +86,13 @@ const SPEED_INCREMENT = 1.5  // 每关速度增量
 
 // 兑换按钮对象
 const exchangeButton = {
-  width: 120,
-  height: 45,
-  x: 0,  // 将在初始化时设置
-  y: 0,  // 将在初始化时设置
+  width: 110,
+  height: 40,
+  x: 15,  // 左下角，与总分对齐
+  y: 0,  // 将在绘制时动态计算（总分下方）
   text: '兑换',
   cost: 1000
 }
-
-// 初始化兑换按钮位置（右下角）
-exchangeButton.x = screenWidth - exchangeButton.width - 15
-exchangeButton.y = gameArea.bottom - exchangeButton.height - 15
 
 // 公主对象（在前面，大一些）
 const princess = {
@@ -252,9 +248,6 @@ function drawGameScreen() {
   ctx.textAlign = 'center'
   ctx.fillStyle = '#333'
   ctx.fillText('点击屏幕射击！', canvas.width / 2, gameArea.top + 40)
-  
-  // 绘制兑换按钮
-  drawExchangeButton()
 }
 
 // 绘制成功画面
@@ -276,7 +269,10 @@ function drawSuccessScreen() {
   // 总分显示在左下角
   ctx.font = '22px Arial'
   ctx.textAlign = 'left'
-  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 30)
+  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 80)
+  
+  // 绘制兑换按钮（在总分下方）
+  drawExchangeButton(gameArea.bottom - 50)
   
   // 绘制被击中的恐龙（在游戏区域中间偏上）
   const defeatedDinoImage = images.dinosaurDefeated || images.dinosaur
@@ -314,9 +310,6 @@ function drawSuccessScreen() {
   ctx.fillStyle = '#666'
   const nextLevel = level + 1
   ctx.fillText('点击进入第 ' + nextLevel + ' 关', canvas.width / 2, gameArea.bottom - 40)
-  
-  // 绘制兑换按钮
-  drawExchangeButton()
 }
 
 // 绘制失败画面
@@ -338,7 +331,10 @@ function drawFailScreen() {
   // 总分显示在左下角
   ctx.font = '22px Arial'
   ctx.textAlign = 'left'
-  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 30)
+  ctx.fillText('总分: ' + score, 15, gameArea.bottom - 80)
+  
+  // 绘制兑换按钮（在总分下方）
+  drawExchangeButton(gameArea.bottom - 50)
   
   // 绘制庆祝的恐龙（在游戏区域中间偏上）
   const dinoY = gameArea.top + gameArea.height * 0.38
@@ -379,9 +375,6 @@ function drawFailScreen() {
   ctx.font = '20px Arial'
   ctx.fillStyle = '#FFF'
   ctx.fillText('点击屏幕再试一次', canvas.width / 2, gameArea.bottom - 40)
-  
-  // 绘制兑换按钮
-  drawExchangeButton()
 }
 
 // 绘制公主（在前面，正面朝向，被追赶的样子）
@@ -517,7 +510,10 @@ function drawGameAreaBorder() {
 }
 
 // 绘制兑换按钮
-function drawExchangeButton() {
+function drawExchangeButton(yPosition) {
+  // 更新按钮Y坐标
+  exchangeButton.y = yPosition
+  
   // 判断是否有足够的分数
   const canExchange = score >= exchangeButton.cost
   
@@ -532,18 +528,12 @@ function drawExchangeButton() {
   
   // 绘制按钮文字
   ctx.fillStyle = '#FFF'
-  ctx.font = 'bold 18px Arial'
+  ctx.font = 'bold 16px Arial'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(exchangeButton.text, 
+  ctx.fillText(exchangeButton.text + ' -' + exchangeButton.cost, 
     exchangeButton.x + exchangeButton.width / 2, 
-    exchangeButton.y + exchangeButton.height / 2 - 8)
-  
-  // 绘制消耗分数
-  ctx.font = '14px Arial'
-  ctx.fillText('-' + exchangeButton.cost, 
-    exchangeButton.x + exchangeButton.width / 2, 
-    exchangeButton.y + exchangeButton.height / 2 + 10)
+    exchangeButton.y + exchangeButton.height / 2)
 }
 
 // 检测是否点击了兑换按钮
@@ -620,10 +610,8 @@ wx.onTouchStart((e) => {
   const touch = e.touches[0]
   console.log('触摸位置:', touch.clientX, touch.clientY)
   
-  // 检查是否点击了兑换按钮（在游戏进行中、成功或失败画面都可以兑换）
-  if ((currentState === GAME_STATE.PLAYING || 
-       currentState === GAME_STATE.SUCCESS || 
-       currentState === GAME_STATE.FAIL) &&
+  // 检查是否点击了兑换按钮（只在成功或失败画面显示）
+  if ((currentState === GAME_STATE.SUCCESS || currentState === GAME_STATE.FAIL) &&
       isClickOnExchangeButton(touch.clientX, touch.clientY)) {
     exchangeScore()
     return  // 点击了按钮就不执行其他操作
